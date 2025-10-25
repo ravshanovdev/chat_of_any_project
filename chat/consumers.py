@@ -1,7 +1,6 @@
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from django.contrib.auth import get_user_model
-from .models import ChatSession, Message
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
@@ -22,23 +21,31 @@ class ChatConsumer(AsyncWebsocketConsumer):
         )
 
     async def receive(self, text_data):
-        data = json.loads(text_data)
-        sender_id = data["sender_id"]
-        message = data["message"]
+        from .models import ChatSession, Message  # ✅ lokal import
 
-        # Save to DB
-        session = await self.get_session()
-        sender = await self.get_user(sender_id)
-        await self.save_message(session, sender, message)
+        try:
+            data = json.loads(text_data)
+            sender_id = data.get("sender_id")
+            message = data.get("message")
 
-        await self.channel_layer.group_send(
-            self.room_group_name,
-            {
-                "type": "chat_message",
-                "message": message,
-                "sender_id": sender_id
-            }
-        )
+            if not sender_id or not message:
+                await self.send(json.dumps({"error": "Invalid payload"}))
+                return
+
+            session = await self.get_session(self.session_id)
+            sender = await self.get_user(sender_id)
+            await self.save_message(session, sender, message)
+
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    "type": "chat_message",
+                    "message": message,
+                    "sender_id": sender_id
+                }
+            )
+        except json.JSONDecodeError:
+            await self.send(json.dumps({"error": "Invalid JSON format"}))
 
     async def chat_message(self, event):
         await self.send(text_data=json.dumps({
@@ -53,9 +60,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     @staticmethod
     async def get_session(session_id):
-
+        from .models import ChatSession  # ✅ lokal import
         return await ChatSession.objects.aget(id=session_id)
 
     @staticmethod
     async def save_message(session, sender, message):
+        from .models import Message  # ✅ lokal import
         await Message.objects.acreate(session=session, sender=sender, text=message)

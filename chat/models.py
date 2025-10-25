@@ -1,9 +1,5 @@
-import django
 from django.conf import settings
 from django.db import models
-
-if not settings.configured:
-    django.setup()
 
 
 class ChatSession(models.Model):

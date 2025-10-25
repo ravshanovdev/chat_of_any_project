@@ -1,0 +1,19 @@
+
+services:
+  web:
+    build: .
+    container_name: agronom_chat_web
+    command: daphne -b 0.0.0.0 -p 8000 config.asgi:application
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-alpine
+    container_name: agronom_chat_redis
+    ports:
+      - "6379:6379"

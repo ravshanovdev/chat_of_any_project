@@ -32,8 +32,8 @@ class SendMessageAPIView(APIView):
 
     def post(self, request, session_id):
         try:
-
             session = ChatSession.objects.get(id=session_id, is_active=True)
+
         except ChatSession.DoesNotExist:
             return Response(
                 {"error": "Bunday faol chat sessiya topilmadi"},

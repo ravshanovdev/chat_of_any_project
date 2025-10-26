@@ -21,8 +21,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         )
 
     async def receive(self, text_data):
-        from .models import ChatSession, Message  # ✅ lokal import
-
         try:
             data = json.loads(text_data)
             sender_id = data.get("sender_id")
@@ -60,10 +58,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     @staticmethod
     async def get_session(session_id):
-        from .models import ChatSession  # ✅ lokal import
+        from .models import ChatSession
         return await ChatSession.objects.aget(id=session_id)
 
     @staticmethod
     async def save_message(session, sender, message):
-        from .models import Message  # ✅ lokal import
+        from .models import Message
         await Message.objects.acreate(session=session, sender=sender, text=message)

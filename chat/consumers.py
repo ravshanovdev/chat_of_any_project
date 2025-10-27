@@ -14,6 +14,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
         )
         await self.accept()
 
+        await self.send(text_data=json.dumps({
+            "type": "system_message",
+            "message": (
+                "👋 Assalomu alaykum! O‘simlik kasallikmi yoki begona o‘tmi? "
+                "Qanday yordam bera olaman?"
+                "🪴 Tavsiya: Iltimos, o‘simlik nomini yozing va "
+                "kasallangan joyni rasmga oling 📸"
+            )
+        }))
+
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(
             self.room_group_name,

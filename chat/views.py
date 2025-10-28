@@ -6,7 +6,7 @@ from .models import ChatSession, Message
 from .serializers import ChatSessionSerializer, MessageSerializer
 from django.utils import timezone
 from django.contrib.auth import get_user_model
-
+from django.db.models import Count, Q
 User = get_user_model()
 
 
@@ -15,11 +15,21 @@ class StartChatAPIView(APIView):
 
     def post(self, request):
         user = request.user
-        expert = User.objects.filter(role="expert").first()
+        experts = User.objects.filter(role="expert")
+        plant_name = request.data.get("plant_name")
 
-        if not expert:
+        if not experts.exists():
             return Response({"message": "there's not available expert, please wait.!"},
                             status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        if not plant_name:
+            return Response({"error": "plant_name kiritish majburiy"}, status=status.HTTP_400_BAD_REQUEST)
+
+        experts = experts.filter(specialty__icontains=plant_name)
+
+        expert = (
+            experts.annotate(chat_count=Count("expert_sessions")).order_by("chat_count").first()
+        )
 
         session = ChatSession.objects.create(user=user, expert=expert)
         serializer = ChatSessionSerializer(session)
@@ -49,14 +59,16 @@ class SendMessageAPIView(APIView):
             return Response({"message": "You do not have permission to join this chat!"}, status=403)
 
         text = request.data.get("text")
+        image = request.FILES.get('image')
 
-        if not text:
-            return Response({"error": "text kiritish majburiy.!"}, status=status.HTTP_400_BAD_REQUEST)
+        if not text and not image:
+            return Response({"error": "text yoki image kiritish majburiy.!"}, status=status.HTTP_400_BAD_REQUEST)
 
         message = Message.objects.create(
             session=session,
             sender=request.user,
-            text=text,
+            text=text if text else None,
+            image=image,
         )
 
         serializer = MessageSerializer(message)

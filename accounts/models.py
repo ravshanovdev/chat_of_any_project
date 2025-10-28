@@ -10,6 +10,7 @@ ROLE_CHOICES = (
 
 class CustomUser(AbstractUser):
     role = models.CharField(max_length=150, choices=ROLE_CHOICES)
+    specialty = models.TextField(null=True, blank=True)
 
     def __str__(self):
         return f"username: {self.username} <---> role: {self.role}"

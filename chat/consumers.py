@@ -17,8 +17,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps({
             "type": "system_message",
             "message": (
-                "👋 Assalomu alaykum! O‘simlik kasallikmi yoki begona o‘tmi? "
-                "Qanday yordam bera olaman?"
+                "O'simlik bo'yicha qanday savolingiz bor?"
                 "🪴 Tavsiya: Iltimos, o‘simlik nomini yozing va "
                 "kasallangan joyni rasmga oling 📸"
             )

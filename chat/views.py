@@ -7,6 +7,7 @@ from .serializers import ChatSessionSerializer, MessageSerializer
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 from django.db.models import Count, Q
+
 User = get_user_model()
 
 
@@ -15,26 +16,34 @@ class StartChatAPIView(APIView):
 
     def post(self, request):
         user = request.user
-        experts = User.objects.filter(role="expert")
-        plant_name = request.data.get("plant_name")
 
-        if not experts.exists():
-            return Response({"message": "there's not available expert, please wait.!"},
-                            status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        plant_name = request.data.get("plant_name")
 
         if not plant_name:
             return Response({"error": "plant_name kiritish majburiy"}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            experts = User.objects.filter(role="expert")
 
-        experts = experts.filter(specialty__icontains=plant_name)
+            if not experts.exists():
+                return Response({"message": "there's not available expert, please wait.!"},
+                                status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
-        expert = (
-            experts.annotate(chat_count=Count("expert_sessions")).order_by("chat_count").first()
-        )
+            experts = experts.filter(specialty__icontains=plant_name)
 
-        session = ChatSession.objects.create(user=user, expert=expert)
-        serializer = ChatSessionSerializer(session)
+            expert = (
+                experts.annotate(chat_count=Count("expert_sessions")).order_by("chat_count").first()
+            )
 
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+            if not expert:
+                return Response({"message": f"{plant_name} bo‘yicha mutaxassis topilmadi"},
+                                status=status.HTTP_404_NOT_FOUND)
+
+            session = ChatSession.objects.create(user=user, expert=expert)
+            serializer = ChatSessionSerializer(session)
+
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class SendMessageAPIView(APIView):
@@ -114,7 +123,3 @@ class EndChatAPIView(APIView):
         session.ended_at = timezone.now()
         session.save()
         return Response({"status": "Chat yakunlandi"}, status=200)
-
-
-
-
